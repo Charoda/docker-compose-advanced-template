@@ -3,27 +3,25 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from sqlalchemy.orm import Session
 from base import SessionLocal, User
 
 
 class UserView(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     login: str
     email: str
-
-    class Config:
-        orm_mode = True
 
 
 class UserReturnView(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     login: str
     email: str
     id: int
-
-    class Config:
-        orm_mode = True
 
 
 class UserCreate(BaseModel):

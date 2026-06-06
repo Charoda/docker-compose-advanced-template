@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  # PostgreSQL — основная база данных
+  db:
+    image: postgres:15-alpine
+    env_file:
+      - db/.db.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    # Healthcheck, чтобы backend ждал готовности базы
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI-приложение
+  backend:
+    build: ./backend
+    environment:
+      - DB_HOST=db
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Nginx — обратный прокси к backend и раздача статики
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
