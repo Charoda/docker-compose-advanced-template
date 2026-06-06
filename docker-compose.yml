@@ -8,8 +8,6 @@ services:
       - db/.db.env
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     # Healthcheck, чтобы backend ждал готовности базы
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -17,24 +15,33 @@ services:
       timeout: 5s
       retries: 5
 
+  # Инициализация БД: создаёт таблицы и заполняет тестовыми данными
+  init:
+    build: ./backend
+    command: ["python", "init_data.py"]
+    environment:
+      - DB_HOST=db
+    depends_on:
+      db:
+        condition: service_healthy
+
   # FastAPI-приложение
   backend:
     build: ./backend
     environment:
       - DB_HOST=db
-    ports:
-      - "8000:8000"
     depends_on:
-      db:
-        condition: service_healthy
+      init:
+        condition: service_completed_successfully
 
   # Nginx — обратный прокси к backend и раздача статики
   frontend:
     build: ./frontend
     ports:
-      - "80:80"
+      - "8189:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_started
 
 volumes:
   pgdata:
